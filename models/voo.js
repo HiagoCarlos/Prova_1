@@ -18,14 +18,16 @@ const vooSchema = new mongoose.Schema({
     trim: true 
   },
   dataHoraPartida: { 
+    type: Date, 
+    required: [true, 'Data/hora de partida é obrigatória'],
     validate: {
       validator: function(value) {
-        // Permite datas a partir do início do dia atual
+        // Verifica se a data é hoje ou no futuro
         const hoje = new Date();
-        hoje.setHours(0, 0, 0, 0);
+        hoje.setHours(0, 0, 0, 0); // Início do dia atual
         return value >= hoje;
       },
-      message: 'Data/hora deve ser no futuro'
+      message: 'Data/hora deve ser hoje ou no futuro'
     }
   },
   portaoId: { 

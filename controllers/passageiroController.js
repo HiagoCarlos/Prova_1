@@ -29,8 +29,49 @@ module.exports = {
 
   async listar(req, res) {
     try {
-      const passageiros = await Passageiro.find().populate('vooId', 'numeroVoo status');
-      res.json(passageiros);
+      // Opções de filtro
+      const { vooId, statusCheckIn, pagina = 1, limite = 10 } = req.query;
+      
+      // Construir query
+      const query = {};
+      if (vooId) query.vooId = vooId;
+      if (statusCheckIn) query.statusCheckIn = statusCheckIn;
+
+      // Paginação
+      const skip = (pagina - 1) * limite;
+      
+      // Busca com populate e paginação
+      const [passageiros, total] = await Promise.all([
+        Passageiro.find(query)
+          .populate('vooId', 'numeroVoo origem destino')
+          .skip(skip)
+          .limit(parseInt(limite))
+          .sort({ createdAt: -1 }),
+        Passageiro.countDocuments(query)
+      ]);
+
+      // Calcular total de páginas
+      const totalPaginas = Math.ceil(total / limite);
+
+      res.json({
+        total,
+        totalPaginas,
+        paginaAtual: parseInt(pagina),
+        limite: parseInt(limite),
+        passageiros: passageiros.map(p => ({
+          id: p._id,
+          nome: p.nome,
+          cpf: p.cpf,
+          voo: p.vooId ? {
+            numero: p.vooId.numeroVoo,
+            origem: p.vooId.origem,
+            destino: p.vooId.destino
+          } : null,
+          statusCheckIn: p.statusCheckIn,
+          criadoEm: p.createdAt
+        }))
+      });
+
     } catch (err) {
       res.status(500).json({ erro: err.message });
     }

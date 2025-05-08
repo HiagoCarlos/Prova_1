@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const VooController = require('../controllers/VooController');
+const VooController = require('../controllers/vooController');
 
 router.post('/', VooController.criar);
 router.get('/relatorio/dia', VooController.relatorioDia);
