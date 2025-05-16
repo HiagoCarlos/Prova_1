@@ -77,26 +77,53 @@ module.exports = {
     }
   },
 
-  async atualizarCheckIn(req, res) {
+   async atualizarCheckIn(req, res) {
     try {
       const { statusCheckIn } = req.body;
-      const passageiro = await Passageiro.findById(req.params.id).populate('vooId');
+      const passageiroId = req.params.id;
+
+      // Busca o passageiro e popula os dados do voo
+      const passageiro = await Passageiro.findById(passageiroId).populate('vooId');
       
       if (!passageiro) {
         return res.status(404).json({ erro: 'Passageiro não encontrado' });
       }
 
-      // Verifica se voo está em embarque
-      if (statusCheckIn === 'realizado' && passageiro.vooId?.status !== 'embarque') {
-        return res.status(400).json({ erro: 'Check-in só pode ser realizado para voos em embarque' });
+      // Verifica se o passageiro está associado a um voo
+      if (!passageiro.vooId) {
+        return res.status(400).json({ erro: 'Passageiro não está associado a nenhum voo' });
       }
 
+      // Verifica se o voo está em status "embarque"
+      if (statusCheckIn === 'realizado' && passageiro.vooId.status !== 'embarque') {
+        return res.status(400).json({ 
+          erro: 'Check-in só pode ser realizado para voos em embarque',
+          statusAtualDoVoo: passageiro.vooId.status,
+          vooId: passageiro.vooId._id,
+          numeroVoo: passageiro.vooId.numeroVoo
+        });
+      }
+
+      // Atualiza o status do check-in
       passageiro.statusCheckIn = statusCheckIn;
       await passageiro.save();
 
-      res.json(passageiro);
+      res.json({
+        mensagem: `Check-in ${statusCheckIn} atualizado com sucesso`,
+        passageiro: {
+          id: passageiro._id,
+          nome: passageiro.nome,
+          voo: {
+            id: passageiro.vooId._id,
+            numero: passageiro.vooId.numeroVoo,
+            status: passageiro.vooId.status
+          },
+          statusCheckIn: passageiro.statusCheckIn
+        }
+      });
+
     } catch (err) {
-      res.status(400).json({ erro: err.message });
+      res.status(500).json({ erro: err.message });
     }
   }
 };
