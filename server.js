@@ -5,10 +5,9 @@ const cors = require('cors');
 const app = express();
 
 // Conexão com MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/', {
+mongoose.connect('mongodb://localhost:27017/seubanco', {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
-  useCreateIndex: true
+  useUnifiedTopology: true
 })
 .then(() => console.log('✅ Conectado ao MongoDB'))
 .catch(err => console.error('❌ Erro no MongoDB:', err));
