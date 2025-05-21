@@ -1,28 +1,42 @@
-// controllers/authController.js
-const User = require('../models/funcionario');
+const Funcionario = require('../models/funcionario');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
 
 module.exports = {
   register: async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { nome, email, password, cargo } = req.body;
       
-      // Verifica se usuário já existe
-      const userExists = await User.findOne({ email });
-      if (userExists) {
-        return res.status(400).json({ error: 'Email já cadastrado' });
+      // Verifica se funcionário já existe
+      const funcionarioExistente = await Funcionario.findOne({ email });
+      if (funcionarioExistente) {
+        return res.status(400).json({ erro: 'Email já cadastrado' });
       }
 
-      // Cria novo usuário
-      const user = await User.create({ email, password });
+      // Cria novo funcionário
+      const funcionario = await Funcionario.create({ nome, email, password, cargo });
       
-      // Cria token JWT
-      const token = jwt.sign({ userId: user._id }, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
+      // Remove a senha do retorno
+      funcionario.password = undefined;
 
-      res.status(201).json({ token });
+      // Cria token JWT
+      const token = jwt.sign(
+        { 
+          id: funcionario._id,
+          nome: funcionario.nome,
+          cargo: funcionario.cargo 
+        }, 
+        config.jwt.secret, 
+        { expiresIn: config.jwt.expiresIn }
+      );
+
+      res.status(201).json({ 
+        mensagem: 'Funcionário cadastrado com sucesso',
+        funcionario,
+        token 
+      });
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ erro: err.message });
     }
   },
 
@@ -30,18 +44,38 @@ module.exports = {
     try {
       const { email, password } = req.body;
       
-      // Verifica credenciais
-      const user = await User.findOne({ email });
-      if (!user || !(await user.comparePassword(password))) {
-        return res.status(401).json({ error: 'Credenciais inválidas' });
+      // Verifica se funcionário existe
+      const funcionario = await Funcionario.findOne({ email }).select('+password');
+      if (!funcionario) {
+        return res.status(401).json({ erro: 'Credenciais inválidas' });
       }
 
-      // Cria token JWT
-      const token = jwt.sign({ userId: user._id }, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
+      // Verifica senha
+      if (!(await funcionario.comparePassword(password))) {
+        return res.status(401).json({ erro: 'Credenciais inválidas' });
+      }
 
-      res.json({ token });
+      // Remove a senha do retorno
+      funcionario.password = undefined;
+
+      // Cria token JWT
+      const token = jwt.sign(
+        { 
+          id: funcionario._id,
+          nome: funcionario.nome,
+          cargo: funcionario.cargo 
+        }, 
+        config.jwt.secret, 
+        { expiresIn: config.jwt.expiresIn }
+      );
+
+      res.json({ 
+        mensagem: 'Login realizado com sucesso',
+        funcionario,
+        token 
+      });
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ erro: err.message });
     }
   }
 };

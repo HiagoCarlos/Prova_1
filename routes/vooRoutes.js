@@ -1,18 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const vooController = require('../controllers/vooController');
+const authMiddleware = require('../middleware/authMiddleware');
 
-// Rotas para voos
-router.get('/voos', vooController.listar);
-router.post('/voos', vooController.criar);
-router.get('/voos/:id', vooController.obterPorId);
-router.put('/voos/:id', vooController.atualizar);
-router.delete('/voos/:id', vooController.remover);
+// Rotas públicas
+router.get('/', vooController.listar);
+router.get('/:id', vooController.obterPorId);
+router.get('/relatorio/dia', vooController.relatorioDia);
 
-// Relatórios
-router.get('/voos/relatorio/dia', vooController.relatorioDia);
+// Rotas protegidas
+router.post('/', authMiddleware, vooController.criar);
+router.post('/:passageiroId/associar', authMiddleware, vooController.associarPassageiro);
 
-// Associação de passageiros
-router.put('/passageiros/:passageiroId/associar-voo', vooController.associarPassageiro);
+// Rotas apenas para admin
+router.put('/:id', authMiddleware, authMiddleware.isAdmin, vooController.atualizar);
+router.delete('/:id', authMiddleware, authMiddleware.isAdmin, vooController.remover);
 
 module.exports = router;
